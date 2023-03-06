@@ -74,7 +74,7 @@ client.on(Events.InteractionCreate, async interaction => {
 async function addWhitelist(interaction) {
 	const fivemPlayerId = interaction.fields.getTextInputValue('fivemPlayerIdInput');
 	const discordPlayerId = interaction.fields.getTextInputValue('discordPlayerIdInput');
-    
+
 	let conn;
 	try {
 		conn = await pool.getConnection();
@@ -88,15 +88,15 @@ async function addWhitelist(interaction) {
 			Aprovador: ${interaction.member}
 		`)
 		.setColor('#0cad00');
-  
-	  await interaction.reply({ embeds: [embed] });
+
+		await interaction.reply({ embeds: [embed] });
 	} catch (error) {
 		console.error(error);
-	  	await interaction.reply({ content: `Erro ao adicionar whitelist: ${error.message}`, ephemeral: true });
+		await interaction.reply({ content: `Erro ao adicionar whitelist: ${error.message}`, ephemeral: true });
 	} finally {
-	  	if (conn) conn.end();
+		if (conn) conn.end();
 	}
-  }
+}
   
 async function remWhitelist(interaction) {
 	const fivemPlayerId = interaction.fields.getTextInputValue('fivemPlayerIdInput');
