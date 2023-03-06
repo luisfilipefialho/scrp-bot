@@ -2,7 +2,7 @@ const mariadb = require('mariadb');
 const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, Events, GatewayIntentBits, EmbedBuilder } = require('discord.js');
-const { token, requiredRole } = require('./config.json');
+const { token, requiredRole, requiredChannel } = require('./config.json');
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
@@ -28,7 +28,10 @@ client.once(Events.ClientReady, () => {
 });
 
 client.on(Events.InteractionCreate, async interaction => {
-	// Check if the interaction is a command
+	//Check if the channel is allowed to be used
+	if (interaction.channelId !== requiredChannel) return;
+
+	//Check if the interaction is a command
 	if (interaction.isCommand()) {
 		const command = client.commands.get(interaction.commandName);
 
@@ -58,35 +61,68 @@ client.on(Events.InteractionCreate, async interaction => {
 		switch (interaction.customId) {
 
 			case 'AddWhitelist':
-				const fivemPlayerId = interaction.fields.getTextInputValue('fivemPlayerIdInput');
-				const discordPlayerId = interaction.fields.getTextInputValue('discordPlayerIdInput');
-				let conn;
+				await addWhitelist(interaction)
+				break;
 
-				try {
-					conn = await pool.getConnection();
-					const res = await conn.query(`UPDATE vrp_users SET whitelisted = 1 WHERE id = ${fivemPlayerId}`)
-				
-					console.log({ fivemPlayerId, discordPlayerId });
-
-					const embed = new EmbedBuilder()
-					.setTitle('**Player Aprovado ✅**')
-					.setDescription(`
-						ID: ${fivemPlayerId}
-						Player: <@${discordPlayerId}>
-						Aprovador: ${interaction.member}`)
-					.setColor('#0cad00');
-	
-					await interaction.reply({ embeds: [embed]});
-				} catch (error) {
-					throw err;
-				} finally {
-					if (conn) return conn.end();
-				}
+			case 'RemWhitelist':
+				await remWhitelist(interaction)
 				break;
 		}
-
-		
 	}
 });
+
+async function addWhitelist(interaction) {
+	const fivemPlayerId = interaction.fields.getTextInputValue('fivemPlayerIdInput');
+	const discordPlayerId = interaction.fields.getTextInputValue('discordPlayerIdInput');
+    
+	let conn;
+	try {
+		conn = await pool.getConnection();
+		await conn.query(`UPDATE vrp_users SET whitelisted = 1 WHERE id = ${fivemPlayerId}`);
+
+		const embed = new EmbedBuilder()
+		.setTitle('**Whitelist Adicionada ✅**')
+		.setDescription(`
+			ID: ${fivemPlayerId}
+			Player: <@${discordPlayerId}>
+			Aprovador: ${interaction.member}
+		`)
+		.setColor('#0cad00');
+  
+	  await interaction.reply({ embeds: [embed] });
+	} catch (error) {
+		console.error(error);
+	  	await interaction.reply({ content: `Erro ao adicionar whitelist: ${error.message}`, ephemeral: true });
+	} finally {
+	  	if (conn) conn.end();
+	}
+  }
+  
+async function remWhitelist(interaction) {
+	const fivemPlayerId = interaction.fields.getTextInputValue('fivemPlayerIdInput');
+	const discordPlayerId = interaction.fields.getTextInputValue('discordPlayerIdInput');
+	
+	let conn;
+	try {
+		conn = await pool.getConnection();
+
+		await conn.query(`UPDATE vrp_users SET whitelisted = ? WHERE id = ?`, [0, fivemPlayerId])
+	
+		const embed = new EmbedBuilder()
+			.setTitle('**Whitelist Removida ⛔**')
+			.setDescription(`
+				ID: ${fivemPlayerId}
+				Player: <@${discordPlayerId}>
+				Aprovador: ${interaction.member}`)
+			.setColor('#be0000');
+
+		await interaction.reply({ embeds: [embed]});
+	} catch (error) {
+		console.error(error);
+		await interaction.reply({ content: 'Houve um erro ao executar este comando!', ephemeral: true });
+	} finally {
+		if (conn) conn.end();
+	}
+}
 
 client.login(token);
