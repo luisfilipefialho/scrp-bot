@@ -25,9 +25,9 @@ const pool = mariadb.createPool({
 });
 
 client.once(Events.ClientReady, () => {
-	console.clear();
-	console.log(`\n		   \x1b[32mBot \x1b[32;1;3;4mONLINE\x1b[0m
-  \x1b[0mQualquer duvida entre em contato, \x1b[33m1nsend#8207\x1b[0m.`);
+	console.clear(); 
+	console.log(`\n	      \x1b[32mBot \x1b[32;1;3;4mONLINE\x1b[0m
+      	    \x1b[0m [\x1b[33m1nsend#8207\x1b[0m]`);
 });
 
 client.on(Events.InteractionCreate, async interaction => {
