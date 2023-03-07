@@ -1,8 +1,9 @@
 const mariadb = require('mariadb');
 const fs = require('node:fs');
 const path = require('node:path');
-const { Client, Collection, Events, GatewayIntentBits, EmbedBuilder } = require('discord.js');
-const { token, requiredRole, requiredChannel } = require('./config.json');
+const handlers = require('./handler')
+const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
+const { token, requiredRole, requiredChannel, db_host, db_user, db_password, db_name } = require('./config.json');
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
@@ -17,10 +18,10 @@ for (const file of commandFiles) {
 }
 
 const pool = mariadb.createPool({
-	host: 'localhost', 
-	user:'root', 
-	password: '',
-	database: 'scrp',
+	host: db_host, 
+	user: db_user, 
+	password: db_password,
+	database: db_name,
 });
 
 client.once(Events.ClientReady, () => {
@@ -28,10 +29,8 @@ client.once(Events.ClientReady, () => {
 });
 
 client.on(Events.InteractionCreate, async interaction => {
-	//Check if the channel is allowed to be used
 	if (interaction.channelId !== requiredChannel) return;
 
-	//Check if the interaction is a command
 	if (interaction.isCommand()) {
 		const command = client.commands.get(interaction.commandName);
 
@@ -48,81 +47,16 @@ client.on(Events.InteractionCreate, async interaction => {
 		} catch (error) {
 			console.error(error);
 			if (interaction.replied || interaction.deferred) {
-				await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
+				await interaction.followUp({ content: `Erro ao executar este comando: ${error.message}`, ephemeral: true });
 			} else {
-				await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+				await interaction.reply({ content: `Erro ao executar este comando: ${error.message}`, ephemeral: true });
 			}
 		}
 	}
 
-	// Check if the interaction is a modal submission
 	if (interaction.isModalSubmit()) {
-
-		switch (interaction.customId) {
-
-			case 'AddWhitelist':
-				await addWhitelist(interaction)
-				break;
-
-			case 'RemWhitelist':
-				await remWhitelist(interaction)
-				break;
-		}
+		if (interaction.customId) handlers[interaction.customId](interaction, pool)
 	}
 });
-
-async function addWhitelist(interaction) {
-	const fivemPlayerId = interaction.fields.getTextInputValue('fivemPlayerIdInput');
-	const discordPlayerId = interaction.fields.getTextInputValue('discordPlayerIdInput');
-
-	let conn;
-	try {
-		conn = await pool.getConnection();
-		await conn.query(`UPDATE vrp_users SET whitelisted = 1 WHERE id = ${fivemPlayerId}`);
-
-		const embed = new EmbedBuilder()
-		.setTitle('**Whitelist Adicionada ✅**')
-		.setDescription(`
-			ID: ${fivemPlayerId}
-			Player: <@${discordPlayerId}>
-			Aprovador: ${interaction.member}
-		`)
-		.setColor('#0cad00');
-
-		await interaction.reply({ embeds: [embed] });
-	} catch (error) {
-		console.error(error);
-		await interaction.reply({ content: `Erro ao adicionar whitelist: ${error.message}`, ephemeral: true });
-	} finally {
-		if (conn) conn.end();
-	}
-}
-  
-async function remWhitelist(interaction) {
-	const fivemPlayerId = interaction.fields.getTextInputValue('fivemPlayerIdInput');
-	const discordPlayerId = interaction.fields.getTextInputValue('discordPlayerIdInput');
-	
-	let conn;
-	try {
-		conn = await pool.getConnection();
-
-		await conn.query(`UPDATE vrp_users SET whitelisted = ? WHERE id = ?`, [0, fivemPlayerId])
-	
-		const embed = new EmbedBuilder()
-			.setTitle('**Whitelist Removida ⛔**')
-			.setDescription(`
-				ID: ${fivemPlayerId}
-				Player: <@${discordPlayerId}>
-				Aprovador: ${interaction.member}`)
-			.setColor('#be0000');
-
-		await interaction.reply({ embeds: [embed]});
-	} catch (error) {
-		console.error(error);
-		await interaction.reply({ content: 'Houve um erro ao executar este comando!', ephemeral: true });
-	} finally {
-		if (conn) conn.end();
-	}
-}
 
 client.login(token);
