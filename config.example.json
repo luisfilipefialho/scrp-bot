@@ -1,0 +1,32 @@
+{
+    "clientId": "Your Bot Client ID",
+    "guildId": "Your Discord Guild ID",
+    "token": "Your Bot Token",
+
+    "whitelistedRole": "ID of the whitelist role",
+
+    "allowedRole": "ID of the required Role for use bot commands",
+    "allowedChannels": [
+        "IDs of the allowed Channels for use bot commands"
+    ],
+
+    "logChannel": "ID of the Channel that the bot will send logs",
+
+    "db_host": "Your database Host/IP (default: 127.0.0.1 or localhost)",
+    "db_user": "Your database User (default: root)",
+    "db_password": "Your database Password if exists",
+    "db_name": "Your database Name",
+
+    "serverGroups": [
+        "If you use VRPex Server put your server groups here. Example:",
+        
+        "cabo",
+        "sargento",
+        "subtenente",
+        "tenente",
+        "capitao",
+        "major"
+    ],
+
+    "Contact": "For more information please contact 1nsend#8207 on discord. (If you want delete this line)"
+}

@@ -3,8 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const handlers = require('./handler')
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
-const { token, requiredRole, requiredChannel, db_host, db_user, db_password, db_name } = require('./config.json');
-
+const { token, allowedRole, allowedChannels, db_host, db_user, db_password, db_name } = require('./config.json');
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 client.commands = new Collection();
@@ -31,15 +30,14 @@ client.once(Events.ClientReady, () => {
 });
 
 client.on(Events.InteractionCreate, async interaction => {
-	if (interaction.channelId !== requiredChannel) return;
+	if (!allowedChannels.includes(interaction.channelId)) return;
 
 	if (interaction.isCommand()) {
 		const command = client.commands.get(interaction.commandName);
-
 		if (!command) return;
 
 		const member = interaction.member;
-		if (!member.roles.cache.has(requiredRole)) {
+		if (!member.roles.cache.has(allowedRole)) {
 		  await interaction.reply({ content: 'Você não possui permissão para usar esse comando.', ephemeral: true });
 		  return;
 		}
